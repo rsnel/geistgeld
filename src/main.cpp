@@ -727,7 +727,8 @@ int64 static GetBlockValue(int nHeight, int64 nFees)
     }
     // Subsidy is cut in half every 4 years
     //nSubsidy >>= (nHeight / 210000);
-    nSubsidy >>= (nHeight / (GetMaxMoney()/COIN/100));
+    //nSubsidy >>= (nHeight / (GetMaxMoney()/COIN/100));
+	//
     printf("nHeight = %u  nSbsidy = %lu nFees = %ld \n",nHeight,nSubsidy,nFees);
     printf("GetMaxMoney()/COIN/10 = %u \n",(GetMaxMoney()/COIN));
 
