@@ -1425,7 +1425,7 @@ bool CBlock::CheckBlock(int nHeight) const
         return error("CheckBlock() : proof of work failed");
 
     // Check timestamp
-    if (GetBlockTime() > GetAdjustedTime() + 2 * 60 * 60)
+    if etBlockTime() > GetAdjustedTime() + GetArgIntxx(4800,"-future_time_limit"))
         return error("CheckBlock() : block timestamp too far in the future");
 
     // First transaction must be coinbase, the rest must not be
