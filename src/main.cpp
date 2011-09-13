@@ -790,19 +790,25 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast)
         return pindexLast->nBits;
     }
 
-    // Go back by what we want to be 14 days worth of blocks
+	 // Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
+    int blockstogoback = nInterval-1;
+    if(GetBoolArg("-enablefullretargetperiod") && ((pindexLast->nHeight+1) != nInterval))
+        blockstogoback = nInterval;
+
+	    // Go back by what we want to be 14 days worth of blocks
     const CBlockIndex* pindexFirst = pindexLast;
-    for (int i = 0; pindexFirst && i < nInterval-1; i++)
+    for (int i = 0; pindexFirst && i < blockstogoback; i++)
         pindexFirst = pindexFirst->pprev;
     assert(pindexFirst);
-
-    // Limit adjustment step
+	
+		
+    // Limit adjustment step [altered for GG's purposes]
     int64 nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
     printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
-    if (nActualTimespan < nTargetTimespan/4)
-        nActualTimespan = nTargetTimespan/4;
-    if (nActualTimespan > nTargetTimespan*4)
-        nActualTimespan = nTargetTimespan*4;
+    if (nActualTimespan < nTargetTimespan/1.769)
+        nActualTimespan = nTargetTimespan/1.769;
+    if (nActualTimespan > nTargetTimespan*1.769)
+        nActualTimespan = nTargetTimespan*1.769;
 
     // Retarget
     CBigNum bnNew;
@@ -1480,13 +1486,13 @@ bool CBlock::AcceptBlock()
 
     // Check that the block chain matches the known block chain up to a checkpoint
     if (!fTestNet)
-        if ((nHeight ==  669 && hash != uint256("0x0000000002d0c7ae4faa3be972f44525440a3c4f40fd52c2a06e9addc2a99a8e")) ||
-            (nHeight == 7777 && hash != uint256("0x0000000fbebe2a10e03de788495f35cc62c5245da5dd980aaedbf5e94d6454a2")))
+        if ((nHeight == 100 && hash != uint256("0x00000000a4eea5877f58aaa6bcff2e00032b6df0e64528f18c5cb6e65a5a48e7")) ||
+            (nHeight == 200 && hash != uint256("0x000000006eccc8a7a759e13a3ba6ef4c907b8236fa23a19dcfdb93ebb6c8cc38")))
             return error("AcceptBlock() : rejected by checkpoint lockin at %d", nHeight);
 
    if (fTestNet)
-        if ((nHeight ==  669 && hash != uint256("0x0000000002d0c7ae4faa3be972f44525440a3c4f40fd52c2a06e9addc2a99a8e")) ||
-            (nHeight == 7777 && hash != uint256("0x0000000fbebe2a10e03de788495f35cc62c5245da5dd980aaedbf5e94d6454a2")))
+        if ((nHeight == 100 && hash != uint256("0x00000000a4eea5877f58aaa6bcff2e00032b6df0e64528f18c5cb6e65a5a48e7")) ||
+            (nHeight == 200 && hash != uint256("0x000000006eccc8a7a759e13a3ba6ef4c907b8236fa23a19dcfdb93ebb6c8cc38")))
             return error("AcceptBlock() : rejected by checkpoint lockin at %d", nHeight);
 
     // Write block to history file

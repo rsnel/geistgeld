@@ -838,6 +838,8 @@ void ShrinkDebugFile()
 //  - Median of other nodes's clocks
 //  - The user (asking the user to fix the system clock if the first two disagree)
 //
+//NTP code found in this version courtesy of Art Forz
+//
 
 int64 GetTime()
 {
