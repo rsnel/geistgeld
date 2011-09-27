@@ -94,7 +94,7 @@ int GetCoinbase_maturity()
     if (fTestNet_config && mapArgs.count("-coinbase_maturity"))
        {
            int ncoinbase_maturity = atoi(mapArgs["-coinbase_maturity"]);
-           //printf("COINBASE_MATURITY = %u set in config bitcoin.config \n",ncoinbase_maturity);          
+           //printf("COINBASE_MATURITY = %u set in config geist.config \n",ncoinbase_maturity);          
            return atoi(mapArgs["-coinbase_maturity"]);                    
        }
        else
@@ -113,7 +113,7 @@ int GetArgIntxx(int udefault, const char* argument)
         stringstream convert(mapArgs[argument]);
         if ( !(convert >> uvalue)) 
             uvalue = 0;
-        printf("argument %s  found in bitcoin.conf with uint %u being used  \n",argument,uvalue);
+        printf("argument %s  found in geist.conf with uint %u being used  \n",argument,uvalue);
         return uvalue;
     }
     return udefault;
@@ -410,7 +410,7 @@ bool CTransaction::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs, bool* pfMi
 
 
     // Rather not work on nonstandard transactions
-    // to enable running scripts add -nonstandard in bitcoin.conf by sacarlson
+    // to enable running scripts add -nonstandard in geist.conf by sacarlson
     if (!fTestNet && !IsStandard())
     {
         if (!mapArgs.count("-nonstandard"))
@@ -727,8 +727,7 @@ int64 static GetBlockValue(int nHeight, int64 nFees)
     }
     // Subsidy is cut in half every 4 years
     //nSubsidy >>= (nHeight / 210000);
-    //nSubsidy >>= (nHeight / (GetMaxMoney()/COIN/100));
-	//
+    nSubsidy >>= (nHeight / (GetMaxMoney()/COIN/100));
     printf("nHeight = %u  nSbsidy = %lu nFees = %ld \n",nHeight,nSubsidy,nFees);
     printf("GetMaxMoney()/COIN/10 = %u \n",(GetMaxMoney()/COIN));
 
@@ -811,6 +810,7 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast)
         nActualTimespan = nTargetTimespan*1.769;
 
     // Retarget
+
     CBigNum bnNew;
     bnNew.SetCompact(pindexLast->nBits);
     bnNew *= nActualTimespan;
@@ -1250,6 +1250,7 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
 bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 {
     uint256 hash = GetHash();
+    bool lp = false;
 
     txdb.TxnBegin();
     if (pindexGenesisBlock == NULL && hash == hashGenesisBlock)
@@ -1289,9 +1290,10 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
         }
     }
 
-    // Update best block in wallet (so we can detect restored wallets)
     if (!IsInitialBlockDownload())
     {
+        lp = true;
+        // Update best block in wallet (so we can detect restored wallets)
         const CBlockLocator locator(pindexNew);
         ::SetBestChain(locator);
     }
@@ -1304,6 +1306,23 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
     nTimeBestReceived = GetTime();
     nTransactionsUpdated++;
     printf("SetBestChain: new best=%s  height=%d  work=%s\n", hashBestChain.ToString().substr(0,20).c_str(), nBestHeight, bnBestChainWork.ToString().c_str());
+
+    if (lp)
+    {
+        // Support long polling
+        string lp_pid = mapArgs["-pollpidfile"];
+        if(lp_pid != "")
+        {
+            FILE *pidFile = fopen(lp_pid.c_str(), "r");
+            if(pidFile!=NULL)
+            {
+                int pid=0;
+                if ((fscanf(pidFile, "%d", &pid) == 1) && (pid > 1))
+                    kill((pid_t) pid, SIGUSR1);
+                fclose(pidFile);
+            }
+        }
+    }
 
     return true;
 }
@@ -1431,7 +1450,8 @@ bool CBlock::CheckBlock(int nHeight) const
         return error("CheckBlock() : proof of work failed");
 
     // Check timestamp
-    if (GetBlockTime() > GetAdjustedTime() + GetArgIntxx(10,"-future_time_limit"))
+    //if (GetBlockTime() > GetAdjustedTime() + 2 * 60 * 60)
+    if (GetBlockTime() > GetAdjustedTime() + GetArgIntxx(27,"-future_time_limit"))
         return error("CheckBlock() : block timestamp too far in the future");
 
     // First transaction must be coinbase, the rest must not be
@@ -1688,7 +1708,7 @@ bool LoadBlockIndex(bool fAllowNew)
         if (fTestNet_config && mapArgs.count("-genesisblock"))
         {
             hashGenesisBlock = uint256(mapArgs["-genesisblock"]);
-            printf("hashGenesisBlock custom configured by -genesisblock in bitcoin.conf \n");
+            printf("hashGenesisBlock custom configured by -genesisblock in geist.conf \n");
         }
         else
         {
@@ -1789,7 +1809,7 @@ bool LoadBlockIndex(bool fAllowNew)
             stringstream convert(mapArgs["-block_nTime"]);
             if ( !(convert >> block.nTime)) 
                 block.nTime = 0;
-            printf("block.nTime custom configured by -block_nTime in bitcoin.conf \n");
+            printf("block.nTime custom configured by -block_nTime in geist.conf \n");
        }
              
        if (fTestNet_config && mapArgs.count("-block_nBits"))
@@ -1797,7 +1817,7 @@ bool LoadBlockIndex(bool fAllowNew)
            stringstream convert(mapArgs["-block_nBits"]);
            if ( !(convert >> block.nBits)) 
                block.nBits = 0;
-           printf("block.nBits custom configured by -block_nBits in bitcoin.conf \n");
+           printf("block.nBits custom configured by -block_nBits in geist.conf \n");
        }
          
        if (fTestNet_config && mapArgs.count("-block_nNonce"))
@@ -1805,7 +1825,7 @@ bool LoadBlockIndex(bool fAllowNew)
            stringstream convert(mapArgs["-block_nNonce"]);
            if ( !(convert >> block.nNonce)) 
                block.nNonce = 0;
-           printf("block.nNonce custom configured by -block_nNonce in bitcoin.conf \n");
+           printf("block.nNonce custom configured by -block_nNonce in geist.conf \n");
        }
          
        printf("block.nTime = %u \n", block.nTime);
@@ -1840,7 +1860,7 @@ bool LoadBlockIndex(bool fAllowNew)
         if (fTestNet_config && mapArgs.count("-block_hashMerkleRoot"))
         {
             assert(block.hashMerkleRoot == uint256(mapArgs["-block_hashMerkleRoot"].c_str()));
-            printf("block.hashMerkleRoot custom configured by -block_hashMerkleRoot in bitcoin.conf \n");
+            printf("block.hashMerkleRoot custom configured by -block_hashMerkleRoot in geist.conf \n");
         }
         else
         {
@@ -3142,14 +3162,14 @@ CBlock* CreateNewBlock(CReserveKey& reservekey)
 
 
 void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& nExtraNonce, int64& nPrevTime)
-{
-    // Update nExtraNonce
-    int64 nNow = max(pindexPrev->GetMedianTimePast()+1, GetAdjustedTime());
-    if (++nExtraNonce >= 0x7f && nNow > nPrevTime+1)
+{ // Fix from Luke Dash Jr
+    static uint256 hashPrevBlock;
+    if (hashPrevBlock != pblock->hashPrevBlock)
     {
-        nExtraNonce = 1;
-        nPrevTime = nNow;
+        nExtraNonce = 0;
+        hashPrevBlock = pblock->hashPrevBlock;
     }
+    ++nExtraNonce;   
     pblock->vtx[0].vin[0].scriptSig = CScript() << pblock->nBits << CBigNum(nExtraNonce);
     pblock->hashMerkleRoot = pblock->BuildMerkleTree();
 }
@@ -3255,7 +3275,6 @@ bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
             return error("BitcoinMiner : ProcessBlock, block not accepted");
     }
 
-    Sleep(2000);
     return true;
 }
 

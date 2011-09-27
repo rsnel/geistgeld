@@ -25,7 +25,7 @@ bool fShutdown = false;
 bool fDaemon = false;
 bool fServer = false;
 bool fCommandLine = false;
-string strMiscWarning;
+string strMiscWarning, strRPCUser, strRPCPass;
 bool fTestNet = false;
 bool fTestNet_config = false;
 bool fNoListen = false;
@@ -33,6 +33,7 @@ bool fLogTimestamps = false;
 unsigned char uAddressVersion = 0;
 int nTimeNTPOffset = 0;
 bool fNTPSynced = false;
+
 
 
 
@@ -416,6 +417,25 @@ std::string convert_vch_to_str(const vector<unsigned char>& vchIn)
     return s;
 }
 
+char* ToHex(const char *ptr, int len, char *outbuf)
+{ // max length is 255
+    static char hexmap[16] = { '0', '1', '2', '3', '4', '5', '6', '7',
+                               '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+    char *outptr = outbuf;
+    unsigned char *iptr = (unsigned char *) ptr; 
+
+    while (len-- > 0)
+    {
+        *outptr++ = hexmap[*iptr>>4];
+        *outptr++ = hexmap[*iptr&15];
+        iptr++;
+     }
+
+     *outptr=0;
+     return outbuf;
+}
+
+
 vector<unsigned char> ParseHex(const char* psz)
 {
     static char phexdigit[256] =
@@ -454,6 +474,66 @@ vector<unsigned char> ParseHex(const char* psz)
     }
     return vch;
 }
+
+static const int decode64_table[256]=
+{
+ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+ -1, -1, -1, 62, -1, -1, -1, 63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1,
+ -1, -1, -1, -1, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+ 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1, -1, 26, 27, 28,
+ 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
+ 49, 50, 51, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+};                           
+                             
+std::string DecodeBase64(const std::string &s)
+{
+    char buf[1024];
+    if(s.length()>512) return "";
+    char *optr=buf;
+
+    int dec, mode=0, left=0;
+    size_t index=0;
+    for (int i=0; i<s.length(); i++)
+    {
+         dec=decode64_table[s[i]];
+         if(dec==-1) break;
+         switch(mode)
+         {
+             case 0: // we have no bits and get 6
+                 left = dec;
+                 mode = 1;
+                 break;
+
+              case 1: // we have 6 bits and keep 4
+                 *optr++ = (left<<2) | (dec>>4);
+                  left = dec & 15;
+                  mode = 2;
+                  break;
+                  
+             case 2: // we have 4 bits and get 6, we keep 2            
+                  *optr++ = (left<<4) | (dec>>2);
+                 left = dec & 3;
+                 mode = 3;
+                 break;
+                 
+             case 3: // we have 2 bits and get 6
+                 *optr++ = (left<<6) | dec;
+                 mode=0;
+                 break;
+         }
+    }
+
+    *optr=0;   
+    return buf;
+}
+
 
 vector<unsigned char> ParseHex(const string& str)
 {
@@ -746,7 +826,7 @@ string GetDataDir()
 string GetConfigFile()
 {
     namespace fs = boost::filesystem;
-    fs::path pathConfig(GetArg("-conf", "bitcoin.conf"));
+    fs::path pathConfig(GetArg("-conf", "geist.conf"));
     if (!pathConfig.is_complete())
         pathConfig = fs::path(GetDataDir()) / pathConfig;
     return pathConfig.string();
@@ -767,7 +847,7 @@ void ReadConfigFile(map<string, string>& mapSettingsRet,
     
     for (pod::config_file_iterator it(streamConfig, setOptions), end; it != end; ++it)
     {
-        // Don't overwrite existing settings so command line settings override bitcoin.conf
+        // Don't overwrite existing settings so command line settings override geist.conf
         string strKey = string("-") + it->string_key;
         if (mapSettingsRet.count(strKey) == 0)
             mapSettingsRet[strKey] = it->value[0];
@@ -838,7 +918,7 @@ void ShrinkDebugFile()
 //  - Median of other nodes's clocks
 //  - The user (asking the user to fix the system clock if the first two disagree)
 //
-//NTP code found in this version courtesy of Art Forz
+// NTP code by ArtForz added
 //
 
 int64 GetTime()
@@ -925,7 +1005,6 @@ void AddTimeData(unsigned int ip, int64 nTime)
         }
     }
 }
-
 
 
 

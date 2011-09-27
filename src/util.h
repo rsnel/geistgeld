@@ -19,8 +19,6 @@
 #include <boost/interprocess/sync/interprocess_recursive_mutex.hpp>
 #include <boost/date_time/gregorian/gregorian_types.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/asio.hpp>
 
 #include <openssl/sha.h>
 #include <openssl/ripemd.h>
@@ -169,13 +167,13 @@ extern bool fShutdown;
 extern bool fDaemon;
 extern bool fServer;
 extern bool fCommandLine;
-extern std::string strMiscWarning;
+extern std::string strMiscWarning, strRPCUser, strRPCPass;
 extern bool fTestNet;
 extern bool fTestNet_config;
 extern bool fNoListen;
 extern bool fLogTimestamps;
 extern unsigned char uAddressVersion;
-extern int nTimeNTPOffset;
+extern int nTimeNTPOffset;	
 extern bool fNTPSynced;
 
 void RandAddSeed();
@@ -193,6 +191,7 @@ bool ParseMoney(const std::string& str, int64& nRet);
 bool ParseMoney(const char* pszIn, int64& nRet);
 void convert_str_to_vch(const std::string& strIn, std::vector<unsigned char>& vchRet);
 std::string convert_vch_to_str(const std::vector<unsigned char>& vchIn);
+char* ToHex(const char *ptr, int len, char *outbuf);
 std::vector<unsigned char> ParseHex(const char* psz);
 std::vector<unsigned char> ParseHex(const std::string& str);
 std::string ParseHexstr(const char* psz);
@@ -219,6 +218,7 @@ int64 GetTime();
 int64 GetAdjustedTime();
 void AddTimeData(unsigned int ip, int64 nTime);
 std::string FormatFullVersion();
+std::string DecodeBase64(const std::string &s);
 
 
 
@@ -476,10 +476,10 @@ inline unsigned char GetCharArg(unsigned char udefault, const std::string& strAr
         //stringstream convert(mapArgs[argument]);
         //if ( !(convert >> uvalue)) 
         //    uvalue = 0;
-        //printf("argument %s  found in bitcoin.conf with uint %u being used  \n",strArg,uvalue);
+        //printf("argument %s  found in geist.conf with uint %u being used  \n",strArg,uvalue);
         return uvalue;
     }
-    //printf("argument %s  NOT found in bitcoin.conf so default uint %u being used  \n",strArg,udefault);
+    //printf("argument %s  NOT found in geist.conf so default uint %u being used  \n",strArg,udefault);
     return udefault;
 }
 
@@ -649,7 +649,10 @@ inline pthread_t CreateThread(void(*pfn)(void*), void* parg, bool fWantHandle=fa
         return (pthread_t)0;
     }
     if (!fWantHandle)
+    {
+        pthread_detach(hthread);
         return (pthread_t)-1;
+    }
     return hthread;
 }
 
@@ -676,7 +679,7 @@ inline bool TerminateThread(pthread_t hthread, unsigned int nExitCode)
 
 inline void ExitThread(unsigned int nExitCode)
 {
-    pthread_exit((void*)nExitCode);
+    pthread_exit((void*)(uintptr_t)nExitCode);
 }
 #endif
 
