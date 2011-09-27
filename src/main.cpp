@@ -94,7 +94,7 @@ int GetCoinbase_maturity()
     if (fTestNet_config && mapArgs.count("-coinbase_maturity"))
        {
            int ncoinbase_maturity = atoi(mapArgs["-coinbase_maturity"]);
-           //printf("COINBASE_MATURITY = %u set in config bitcoin.config \n",ncoinbase_maturity);          
+           //printf("COINBASE_MATURITY = %u set in config geist.config \n",ncoinbase_maturity);          
            return atoi(mapArgs["-coinbase_maturity"]);                    
        }
        else
@@ -113,7 +113,7 @@ int GetArgIntxx(int udefault, const char* argument)
         stringstream convert(mapArgs[argument]);
         if ( !(convert >> uvalue)) 
             uvalue = 0;
-        printf("argument %s  found in bitcoin.conf with uint %u being used  \n",argument,uvalue);
+        printf("argument %s  found in geist.conf with uint %u being used  \n",argument,uvalue);
         return uvalue;
     }
     return udefault;
@@ -410,7 +410,7 @@ bool CTransaction::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs, bool* pfMi
 
 
     // Rather not work on nonstandard transactions
-    // to enable running scripts add -nonstandard in bitcoin.conf by sacarlson
+    // to enable running scripts add -nonstandard in geist.conf by sacarlson
     if (!fTestNet && !IsStandard())
     {
         if (!mapArgs.count("-nonstandard"))
@@ -1431,8 +1431,8 @@ bool CBlock::CheckBlock(int nHeight) const
         return error("CheckBlock() : proof of work failed");
 
     // Check timestamp
-    if (GetBlockTime() > GetAdjustedTime() + GetArgIntxx(10,"-future_time_limit"))
-        return error("CheckBlock() : block timestamp too far in the future");
+    if (GetBlockTime() > GetAdjustedTime() + GetArgIntxx(27,"-future_time_limit"))
+        return error("CheckBlock() : block speed has exceeded 88 miles per hour and it was evicted as an obnoxious time traveller");
 
     // First transaction must be coinbase, the rest must not be
     if (vtx.empty() || !vtx[0].IsCoinBase())
@@ -1683,12 +1683,12 @@ bool LoadBlockIndex(bool fAllowNew)
     if (fTestNet)
     {
         // start of one sacarlson mod to enable settings from config file
-        printf("testnet mode active \n");
+        printf("Geist Geld mode active \n");
               
         if (fTestNet_config && mapArgs.count("-genesisblock"))
         {
             hashGenesisBlock = uint256(mapArgs["-genesisblock"]);
-            printf("hashGenesisBlock custom configured by -genesisblock in bitcoin.conf \n");
+            printf("hashGenesisBlock custom configured by -genesisblock in geist.conf \n");
         }
         else
         {
@@ -1789,7 +1789,7 @@ bool LoadBlockIndex(bool fAllowNew)
             stringstream convert(mapArgs["-block_nTime"]);
             if ( !(convert >> block.nTime)) 
                 block.nTime = 0;
-            printf("block.nTime custom configured by -block_nTime in bitcoin.conf \n");
+            printf("block.nTime custom configured by -block_nTime in geist.conf \n");
        }
              
        if (fTestNet_config && mapArgs.count("-block_nBits"))
@@ -1797,7 +1797,7 @@ bool LoadBlockIndex(bool fAllowNew)
            stringstream convert(mapArgs["-block_nBits"]);
            if ( !(convert >> block.nBits)) 
                block.nBits = 0;
-           printf("block.nBits custom configured by -block_nBits in bitcoin.conf \n");
+           printf("block.nBits custom configured by -block_nBits in geist.conf \n");
        }
          
        if (fTestNet_config && mapArgs.count("-block_nNonce"))
@@ -1805,7 +1805,7 @@ bool LoadBlockIndex(bool fAllowNew)
            stringstream convert(mapArgs["-block_nNonce"]);
            if ( !(convert >> block.nNonce)) 
                block.nNonce = 0;
-           printf("block.nNonce custom configured by -block_nNonce in bitcoin.conf \n");
+           printf("block.nNonce custom configured by -block_nNonce in geist.conf \n");
        }
          
        printf("block.nTime = %u \n", block.nTime);
@@ -1840,7 +1840,7 @@ bool LoadBlockIndex(bool fAllowNew)
         if (fTestNet_config && mapArgs.count("-block_hashMerkleRoot"))
         {
             assert(block.hashMerkleRoot == uint256(mapArgs["-block_hashMerkleRoot"].c_str()));
-            printf("block.hashMerkleRoot custom configured by -block_hashMerkleRoot in bitcoin.conf \n");
+            printf("block.hashMerkleRoot custom configured by -block_hashMerkleRoot in geist.conf \n");
         }
         else
         {

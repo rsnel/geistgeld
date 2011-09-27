@@ -676,12 +676,12 @@ string MyGetSpecialFolderPath(int nFolder, bool fCreate)
 
 string GetDefaultDataDir()
 {
-    // Windows: C:\Documents and Settings\username\Application Data\Bitcoin
-    // Mac: ~/Library/Application Support/Bitcoin
-    // Unix: ~/.bitcoin
+    // Windows: C:\Documents and Settings\username\Application Data\geistgeld
+    // Mac: ~/Library/Application Support/geistgeld
+    // Unix: ~/.geistgeld
 #ifdef __WXMSW__
     // Windows
-    return MyGetSpecialFolderPath(CSIDL_APPDATA, true) + "\\Bitcoin";
+    return MyGetSpecialFolderPath(CSIDL_APPDATA, true) + "\\geistgeld";
 #else
     char* pszHome = getenv("HOME");
     if (pszHome == NULL || strlen(pszHome) == 0)
@@ -693,10 +693,10 @@ string GetDefaultDataDir()
     // Mac
     strHome += "Library/Application Support/";
     filesystem::create_directory(strHome.c_str());
-    return strHome + "Bitcoin";
+    return strHome + "geistgeld";
 #else
     // Unix
-    return strHome + ".bitcoin";
+    return strHome + ".geistgeld";
 #endif
 #endif
 }
@@ -725,7 +725,7 @@ void GetDataDir(char* pszDir)
         char* p = pszDir + strlen(pszDir);
         if (p > pszDir && p[-1] != '/' && p[-1] != '\\')
             *p++ = '/';
-        strcpy(p, "testnet");
+        strcpy(p, "geistdata");
         nVariation += 2;
     }
     static bool pfMkdir[4];
@@ -746,7 +746,7 @@ string GetDataDir()
 string GetConfigFile()
 {
     namespace fs = boost::filesystem;
-    fs::path pathConfig(GetArg("-conf", "bitcoin.conf"));
+    fs::path pathConfig(GetArg("-conf", "geist.conf"));
     if (!pathConfig.is_complete())
         pathConfig = fs::path(GetDataDir()) / pathConfig;
     return pathConfig.string();
@@ -767,7 +767,7 @@ void ReadConfigFile(map<string, string>& mapSettingsRet,
     
     for (pod::config_file_iterator it(streamConfig, setOptions), end; it != end; ++it)
     {
-        // Don't overwrite existing settings so command line settings override bitcoin.conf
+        // Don't overwrite existing settings so command line settings override geist.conf
         string strKey = string("-") + it->string_key;
         if (mapSettingsRet.count(strKey) == 0)
             mapSettingsRet[strKey] = it->value[0];
