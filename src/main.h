@@ -1046,7 +1046,7 @@ public:
     unsigned int nNonce;
 
     // if this is an aux work block
-    boost::shared_ptr<CAuxPow> auxpow;
+    //boost::shared_ptr<CAuxPow> auxpow; This is LARGE, better not keep it in memory...
 
 
     CBlockIndex()
@@ -1064,7 +1064,7 @@ public:
         nTime          = 0;
         nBits          = 0;
         nNonce         = 0;
-        auxpow.reset();
+       // auxpow.reset();
     }
 
     CBlockIndex(unsigned int nFileIn, unsigned int nBlockPosIn, CBlock& block)
@@ -1082,7 +1082,7 @@ public:
         nTime          = block.nTime;
         nBits          = block.nBits;
         nNonce         = block.nNonce;
-        auxpow         = block.auxpow;
+        //auxpow         = block.auxpow;
     }
 
     CBlock GetBlockHeader() const
@@ -1095,7 +1095,7 @@ public:
         block.nTime          = nTime;
         block.nBits          = nBits;
         block.nNonce         = nNonce;
-        block.auxpow         = auxpow;
+        //block.auxpow         = auxpow;
         return block;
     }
 
@@ -1219,7 +1219,7 @@ public:
         READWRITE(nBits);
         READWRITE(nNonce);
 
-        ReadWriteAuxPow(s, auxpow, nType, this->nVersion, ser_action);
+        //ReadWriteAuxPow(s, auxpow, nType, this->nVersion, ser_action);
     )
 
     uint256 GetBlockHash() const

@@ -3459,10 +3459,19 @@ void GenerateBitcoins(bool fGenerate, CWallet* pwallet)
 
 bool CBlockIndex::CheckIndex() const
 {
+      /* well, for normal blocks CBlockIndex::GetBlockHash does not calculate
+       * the hash, it just returns the hash that is used as a key to said
+       * CBlockIndex... This provides little, if any, protection against
+       * database corruption.
+       *
+       * So, in this first try of memory reduction, just forget this check */
+      return true;
+      /*
     if (nVersion & BLOCK_VERSION_AUXPOW)
         return CheckProofOfWork(auxpow->GetParentBlockHash(), nBits);
     else
         return CheckProofOfWork(GetBlockHash(), nBits);
+	*/
 }
 
 std::string CBlockIndex::ToString() const
@@ -3471,6 +3480,6 @@ std::string CBlockIndex::ToString() const
             pprev, pnext, nFile, nBlockPos, nHeight,
             hashMerkleRoot.ToString().substr(0,10).c_str(),
             GetBlockHash().ToString().substr(0,20).c_str(),
-            (auxpow.get() != NULL) ? auxpow->GetParentBlockHash().ToString().substr(0,20).c_str() : "-"
+            /*(auxpow.get() != NULL) ? auxpow->GetParentBlockHash().ToString().substr(0,20).c_str() : "-"*/"UNKNOWN"
             );
 }
